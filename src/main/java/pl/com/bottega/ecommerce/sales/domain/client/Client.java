@@ -13,7 +13,7 @@ private String name;
 	private PaymentFactory paymentFactory;
 	
 	public ClientData generateSnapshot(){
-		return new ClientData(aggregateId, name);
+		return new ClientData(id, name);
 	}
 
 	public boolean canAfford(Money amount) {		

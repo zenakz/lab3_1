@@ -8,7 +8,7 @@ public class BaseAggregateRoot {
 		ACTIVE, ARCHIVE
 	}
 
-	protected Id aggregateId;
+	protected Id id;
 	private AggregateStatus aggregateStatus = AggregateStatus.ACTIVE;
 
 	public void markAsRemoved() {
@@ -16,7 +16,7 @@ public class BaseAggregateRoot {
 	}
 
 	public Id getId() {
-		return aggregateId;
+		return id;
 	}
 
 	public boolean isRemoved() {
@@ -24,6 +24,6 @@ public class BaseAggregateRoot {
 	}
 
 	protected void domainError(String message) {
-		throw new DomainOperationException(aggregateId, message);
+		throw new DomainOperationException(id, message);
 	}
 }
