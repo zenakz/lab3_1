@@ -1,6 +1,7 @@
 package pl.com.bottega.ecommerce.sales.domain.invoicing;
 
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -11,7 +12,7 @@ import pl.com.bottega.ecommerce.sales.domain.productscatalog.ProductType;
 import pl.com.bottega.ecommerce.sharedkernel.Money;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.*;
 
 class BookKeeperTest {
     private static BookKeeper bookKeeper;
@@ -25,11 +26,16 @@ class BookKeeperTest {
     @BeforeAll
     public static void start(){
         bookKeeper = new BookKeeper(new InvoiceFactory());
-        clientData = new ClientData(Id.generate(), "");
-        invoiceRequest = new InvoiceRequest(clientData);
         money = new Money(1, Money.DEFAULT_CURRENCY);
         product = new Product(Id.generate(), money, "product", ProductType.STANDARD);
         Mockito.when(taxPolicy.calculateTax(Mockito.any(), Mockito.any())).thenReturn(new Tax(Money.ZERO, ""));
+    }
+
+    @BeforeEach
+    public void prep(){
+        invoiceRequest = new InvoiceRequest(clientData);
+        clientData = new ClientData(Id.generate(), "");
+
     }
 
     @Test
@@ -40,4 +46,13 @@ class BookKeeperTest {
         assertEquals(1, invoice.getItems().size());
     }
 
+    @Test
+    public void twoItemRequestShouldCallCalculateTwice() {
+        RequestItem requestItem = new RequestItem(product.generateSnapshot(), 1, money);
+        invoiceRequest.add(requestItem);
+        invoiceRequest.add(requestItem);
+        bookKeeper.issuance(invoiceRequest, taxPolicy);
+
+        verify(taxPolicy, times(2)).calculateTax(any(ProductType.class), any(Money.class));
+    }
 }
