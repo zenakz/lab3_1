@@ -5,9 +5,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import pl.com.bottega.ecommerce.canonicalmodel.publishedlanguage.ClientData;
-import pl.com.bottega.ecommerce.canonicalmodel.publishedlanguage.Id;
-import pl.com.bottega.ecommerce.sales.domain.productscatalog.Product;
 import pl.com.bottega.ecommerce.sales.domain.productscatalog.ProductType;
 import pl.com.bottega.ecommerce.sharedkernel.Money;
 
@@ -15,41 +12,46 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class BookKeeperTest {
-    private static BookKeeper bookKeeper;
-    private static Money money;
-    private static Product product;
-    private static ClientData clientData;
-    private static RequestItemMock requestItemMock;
-    private static TaxPolicy taxPolicy=mock(TaxPolicy.class);
-    @BeforeAll
-    public static void start(){
-        money = new Money(1, Money.DEFAULT_CURRENCY);
-        product = new Product(Id.generate(), money, "product", ProductType.STANDARD);
-        Mockito.when(taxPolicy.calculateTax(Mockito.any(), Mockito.any())).thenReturn(new Tax(Money.ZERO, ""));
-    }
 
-    @BeforeEach
-    public void prep(){
-        bookKeeper = new BookKeeper(new InvoiceFactory());
-        clientData = new ClientData(Id.generate(), "");
+    private static BookKeeper bookKeeper;
+    private InvoiceRequestMock invoiceRequest;
+    private static RequestItemMock requestItemMock;
+
+    @Mock private static TaxPolicy taxPolicy;
+
+    @BeforeAll public static void start() {
         requestItemMock = new RequestItemMock();
     }
 
-    //state tests
-    @Test
-    void oneItemRequestShouldReturnOneItem(){
-        InvoiceRequestMock invoiceRequest = new InvoiceRequestMock();
+    @BeforeEach public void prep() {
+        invoiceRequest = new InvoiceRequestMock();
+        taxPolicy = mock(TaxPolicy.class);
+        bookKeeper = new BookKeeper(new InvoiceFactory());
+        Mockito.when(taxPolicy.calculateTax(Mockito.any(), Mockito.any())).thenReturn(new Tax(Money.ZERO, ""));
+    }
+
+    @Test void oneItemRequestShouldReturnOneItem() {
         invoiceRequest.addItem(requestItemMock.getItem());
         Invoice invoice = bookKeeper.issuance(invoiceRequest.build(), taxPolicy);
         assertEquals(1, invoice.getItems().size());
     }
 
+    @Test public void noItemsRequestShouldReturnNoItems() {
+        Invoice invoice = bookKeeper.issuance(invoiceRequest.build(), taxPolicy);
+        assertEquals(0, invoice.getItems().size());
+    }
 
-    //behavior tests
+    @Test public void fourItemRequestShouldReturnFourItems() {
+        invoiceRequest.addItem(requestItemMock.getItem());
+        invoiceRequest.addItem(requestItemMock.getItem());
+        invoiceRequest.addItem(requestItemMock.getItem());
+        invoiceRequest.addItem(requestItemMock.getItem());
 
-    @Test
-    public void twoItemRequestShouldCallCalculateTwice() {
-        InvoiceRequestMock invoiceRequest = new InvoiceRequestMock();
+        Invoice invoice = bookKeeper.issuance(invoiceRequest.build(), taxPolicy);
+        assertEquals(4, invoice.getItems().size());
+    }
+
+    @Test public void twoItemRequestShouldCallCalculateTwice() {
         invoiceRequest.addItem(requestItemMock.getItem());
         invoiceRequest.addItem(requestItemMock.getItem());
         bookKeeper.issuance(invoiceRequest.build(), taxPolicy);
@@ -57,9 +59,13 @@ class BookKeeperTest {
         verify(taxPolicy, times(2)).calculateTax(any(ProductType.class), any(Money.class));
     }
 
-    @Test
-    public void issuanceWithNullArgumentsThrowsNullPointerException() {
-        assertThrows(NullPointerException.class, () ->
-                bookKeeper.issuance(null, null));
+    @Test public void issuanceWithNullArgumentsThrowsNullPointerException() {
+        assertThrows(NullPointerException.class, () -> bookKeeper.issuance(null, null));
+    }
+
+    @Test void requestWithNoItemsShouldNotCallCalculate() {
+        invoiceRequest.build();
+        bookKeeper.issuance(invoiceRequest.build(), taxPolicy);
+        verify(taxPolicy, times(0)).calculateTax(any(), any());
     }
 }

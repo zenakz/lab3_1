@@ -6,6 +6,7 @@ import pl.com.bottega.ecommerce.sales.domain.productscatalog.ProductType;
 import pl.com.bottega.ecommerce.sharedkernel.Money;
 
 public class RequestItemMock {
+
     static Product product = new Product(Id.generate(), Money.ZERO, "bread", ProductType.FOOD);
 
     public RequestItem getItem() {
