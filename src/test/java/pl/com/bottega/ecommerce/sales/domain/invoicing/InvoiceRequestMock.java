@@ -19,12 +19,17 @@ public class InvoiceRequestMock {
         return this;
     }
 
+    public void addItem(RequestItem item){
+        list.add(item);
+    }
+
+
+
     public InvoiceRequest build() {
         if (clientData == null) {
             clientData = mock(ClientData.class);
         }
         InvoiceRequest invoiceRequest = new InvoiceRequest(clientData);
-        list.forEach(invoiceRequest::add);
 
         for (RequestItem item : list) {
             invoiceRequest.add(item);

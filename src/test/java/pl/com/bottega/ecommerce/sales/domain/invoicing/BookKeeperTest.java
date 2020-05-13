@@ -19,13 +19,10 @@ class BookKeeperTest {
     private static Money money;
     private static Product product;
     private static ClientData clientData;
-    private static InvoiceRequest invoiceRequest;
-
-    @Mock
+    private static RequestItemMock requestItemMock;
     private static TaxPolicy taxPolicy=mock(TaxPolicy.class);
     @BeforeAll
     public static void start(){
-        bookKeeper = new BookKeeper(new InvoiceFactory());
         money = new Money(1, Money.DEFAULT_CURRENCY);
         product = new Product(Id.generate(), money, "product", ProductType.STANDARD);
         Mockito.when(taxPolicy.calculateTax(Mockito.any(), Mockito.any())).thenReturn(new Tax(Money.ZERO, ""));
@@ -33,16 +30,17 @@ class BookKeeperTest {
 
     @BeforeEach
     public void prep(){
-        invoiceRequest = new InvoiceRequest(clientData);
+        bookKeeper = new BookKeeper(new InvoiceFactory());
         clientData = new ClientData(Id.generate(), "");
-
+        requestItemMock = new RequestItemMock();
     }
 
+    //state tests
     @Test
     void oneItemRequestShouldReturnOneItem(){
-        RequestItem requestItem = new RequestItem(product.generateSnapshot(), 1, money);
-        invoiceRequest.add(requestItem);
-        Invoice invoice = bookKeeper.issuance(invoiceRequest, taxPolicy);
+        InvoiceRequestMock invoiceRequest = new InvoiceRequestMock();
+        invoiceRequest.addItem(requestItemMock.getItem());
+        Invoice invoice = bookKeeper.issuance(invoiceRequest.build(), taxPolicy);
         assertEquals(1, invoice.getItems().size());
     }
 
@@ -51,11 +49,17 @@ class BookKeeperTest {
 
     @Test
     public void twoItemRequestShouldCallCalculateTwice() {
-        RequestItem requestItem = new RequestItem(product.generateSnapshot(), 1, money);
-        invoiceRequest.add(requestItem);
-        invoiceRequest.add(requestItem);
-        bookKeeper.issuance(invoiceRequest, taxPolicy);
+        InvoiceRequestMock invoiceRequest = new InvoiceRequestMock();
+        invoiceRequest.addItem(requestItemMock.getItem());
+        invoiceRequest.addItem(requestItemMock.getItem());
+        bookKeeper.issuance(invoiceRequest.build(), taxPolicy);
 
         verify(taxPolicy, times(2)).calculateTax(any(ProductType.class), any(Money.class));
+    }
+
+    @Test
+    public void issuanceWithNullArgumentsThrowsNullPointerException() {
+        assertThrows(NullPointerException.class, () ->
+                bookKeeper.issuance(null, null));
     }
 }
