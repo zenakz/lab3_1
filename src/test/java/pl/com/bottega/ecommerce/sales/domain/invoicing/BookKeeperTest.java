@@ -46,6 +46,9 @@ class BookKeeperTest {
         assertEquals(1, invoice.getItems().size());
     }
 
+
+    //behavior tests
+
     @Test
     public void twoItemRequestShouldCallCalculateTwice() {
         RequestItem requestItem = new RequestItem(product.generateSnapshot(), 1, money);
